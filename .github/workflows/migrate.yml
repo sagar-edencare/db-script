@@ -14,8 +14,13 @@ on:
   workflow_dispatch:
     inputs:
       tenants:
-        description: "Target tenants: 'all' or comma-separated, e.g. tenant_a,tenant_c"
-        type: string
+        description: "Which tenant(s) to migrate"
+        type: choice
+        options:
+          - all
+          - tenant_a
+          - tenant_b
+          - tenant_c
         default: all
       command:
         description: "Liquibase command to run"
