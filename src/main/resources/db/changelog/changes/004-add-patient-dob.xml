@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="004-add-patient-dob" author="sagar" context="prod">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="patient" columnName="date_of_birth"/></not>
+        </preConditions>
+        <comment>Add date_of_birth column to patient (JIRA-2050)</comment>
+        <addColumn tableName="patient">
+            <column name="date_of_birth" type="DATE"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="patient" columnName="date_of_birth"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
