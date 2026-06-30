@@ -1,0 +1,22 @@
+# Local test setup: ONE PostgreSQL server that hosts the 3 tenant databases.
+# This is enough to exercise the multi-tenant loop on your machine.
+#
+#   docker compose -f local-test/docker-compose.yml up -d
+#
+services:
+  postgres:
+    image: postgres:16
+    container_name: db-migration-local-pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"          # host 5433 -> matches application.yml defaults
+    volumes:
+      # init.sql runs once on first startup and creates the 3 tenant DBs
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10

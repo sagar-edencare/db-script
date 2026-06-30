@@ -1,0 +1,56 @@
+# =====================================================================
+# db-migration-service configuration
+# Tenants are defined RIGHT HERE — no master database.
+# Passwords use ${ENV_VAR:default} so you can keep them out of Git in prod,
+# but for local testing the defaults below work as-is.
+# =====================================================================
+
+spring:
+  main:
+    web-application-type: none     # batch job, not a web server
+    banner-mode: "off"
+  liquibase:
+    enabled: false                 # we run Liquibase ourselves, per tenant
+
+# --- THE TENANT LIST (edit this to add/remove tenants) ---
+app:
+  tenants:
+    - id: tenant_a
+      name: Acme Hospital
+      url: ${TENANT_A_DB_URL:jdbc:postgresql://localhost:5433/tenant_a_db}
+      username: ${TENANT_A_DB_USERNAME:postgres}
+      password: ${TENANT_A_DB_PASSWORD:postgres}
+      enabled: true
+
+    - id: tenant_b
+      name: Beta Clinic
+      url: ${TENANT_B_DB_URL:jdbc:postgresql://localhost:5433/tenant_b_db}
+      username: ${TENANT_B_DB_USERNAME:postgres}
+      password: ${TENANT_B_DB_PASSWORD:postgres}
+      enabled: true
+
+    - id: tenant_c
+      name: Gamma Care
+      url: ${TENANT_C_DB_URL:jdbc:postgresql://localhost:5433/tenant_c_db}
+      username: ${TENANT_C_DB_USERNAME:postgres}
+      password: ${TENANT_C_DB_PASSWORD:postgres}
+      enabled: true
+
+# --- our own settings (bound to MigrationProperties) ---
+migration:
+  changelog-master: db/changelog/master.xml
+  contexts: ${LIQUIBASE_CONTEXTS:}
+  labels: ${LIQUIBASE_LABELS:}
+  dry-run: ${DRY_RUN:false}
+  continue-on-error: ${CONTINUE_ON_ERROR:true}
+  retry:
+    max-attempts: 3
+    initial-delay-ms: 2000
+
+logging:
+  level:
+    root: INFO
+    com.eden.dbmigration: INFO
+    liquibase: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{tenantId:-startup}] %logger{36} - %msg%n"

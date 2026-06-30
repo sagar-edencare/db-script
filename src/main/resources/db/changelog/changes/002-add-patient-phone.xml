@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+      THE EXAMPLE FROM THE REQUIREMENT: "Add phone column".
+      This is the single file a developer adds for that feature. When the
+      service runs, this changeset is applied to EVERY tenant database that
+      hasn't already recorded it in its DATABASECHANGELOG table.
+    -->
+    <changeSet id="002-add-patient-phone" author="sagar" context="prod">
+        <!-- preConditions must come BEFORE <comment> per the Liquibase schema.
+             This makes it idempotent/safe: skip if the column already exists. -->
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="patient" columnName="phone"/>
+            </not>
+        </preConditions>
+
+        <comment>Add phone column to patient (JIRA-1234)</comment>
+
+        <addColumn tableName="patient">
+            <column name="phone" type="VARCHAR(20)"/>
+        </addColumn>
+
+        <rollback>
+            <dropColumn tableName="patient" columnName="phone"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

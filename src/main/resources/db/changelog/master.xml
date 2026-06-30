@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ROOT changelog. It contains NO changesets itself — only <include>s.
+  This keeps the file small forever: each feature/sprint gets its own file,
+  and we just add one <include> line here. Order matters: top to bottom.
+-->
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <include file="db/changelog/changes/001-initial-schema.xml"/>
+    <include file="db/changelog/changes/002-add-patient-phone.xml"/>
+    <include file="db/changelog/changes/003-add-patient-email.xml"/>
+
+</databaseChangeLog>

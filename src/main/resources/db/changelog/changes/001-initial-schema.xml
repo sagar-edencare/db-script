@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!--
+      A changeset is the atomic unit Liquibase tracks. Identity = id + author.
+      Once applied, NEVER edit it (its checksum is recorded). Create a new one.
+    -->
+    <changeSet id="001-create-patient" author="sagar" context="prod">
+        <comment>Initial patient table</comment>
+        <createTable tableName="patient">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="first_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_name" type="VARCHAR(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- Explicit rollback: what to do if we run `liquibase rollback`. -->
+        <rollback>
+            <dropTable tableName="patient"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

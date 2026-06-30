@@ -1,0 +1,88 @@
+name: db-migration
+
+# - On PRs: only build & test (no DB touched).
+# - Migrations run ONLY when you click "Run workflow" and pick a tenant.
+#   This keeps it explicit — nothing migrates automatically.
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      tenants:
+        description: "Target tenants: 'all' or comma-separated, e.g. tenant_a,tenant_c"
+        type: string
+        default: all
+      command:
+        description: "Liquibase command to run"
+        type: choice
+        options: [update, status, validate, rollback]
+        default: update
+      count:
+        description: "Rollback count (only used when command=rollback)"
+        type: string
+        default: "1"
+      dry_run:
+        description: "Print SQL without applying (update only)"
+        type: boolean
+        default: false
+
+jobs:
+  # Always runs: compiles + tests. Gate for merging PRs.
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Build & test
+        run: mvn -B clean verify
+
+  # Runs ONLY on a manual "Run workflow" — with the tenant YOU selected.
+  migrate:
+    needs: build-test
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: production         # optional manual-approval gate
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Build jar
+        run: mvn -B -q clean package -DskipTests
+
+      - name: Run migration on selected tenant(s)
+        env:
+          # Tenant DB connection details come from GitHub Secrets and override
+          # the ${...} placeholders in application.yml. No Docker needed.
+          TENANT_A_DB_URL: ${{ secrets.TENANT_A_DB_URL }}
+          TENANT_A_DB_USERNAME: ${{ secrets.TENANT_A_DB_USERNAME }}
+          TENANT_A_DB_PASSWORD: ${{ secrets.TENANT_A_DB_PASSWORD }}
+          TENANT_B_DB_URL: ${{ secrets.TENANT_B_DB_URL }}
+          TENANT_B_DB_USERNAME: ${{ secrets.TENANT_B_DB_USERNAME }}
+          TENANT_B_DB_PASSWORD: ${{ secrets.TENANT_B_DB_PASSWORD }}
+          TENANT_C_DB_URL: ${{ secrets.TENANT_C_DB_URL }}
+          TENANT_C_DB_USERNAME: ${{ secrets.TENANT_C_DB_USERNAME }}
+          TENANT_C_DB_PASSWORD: ${{ secrets.TENANT_C_DB_PASSWORD }}
+          LIQUIBASE_CONTEXTS: prod
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          java -jar target/db-migration-service.jar \
+            --tenants='${{ inputs.tenants }}' \
+            --command='${{ inputs.command }}' \
+            --count='${{ inputs.count }}'
+
+  # Always reports the result (wire to Slack/Teams in real use).
+  notify:
+    needs: migrate
+    if: always() && github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report
+        run: echo "Migration result = ${{ needs.migrate.result }}"

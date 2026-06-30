@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- THE NEW "LATEST CHANGE" a developer just committed. -->
+    <changeSet id="003-add-patient-email" author="sagar" context="prod">
+        <preConditions onFail="MARK_RAN">
+            <not><columnExists tableName="patient" columnName="email"/></not>
+        </preConditions>
+        <comment>Add email column to patient (JIRA-2001)</comment>
+        <addColumn tableName="patient">
+            <column name="email" type="VARCHAR(255)"/>
+        </addColumn>
+        <rollback>
+            <dropColumn tableName="patient" columnName="email"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
