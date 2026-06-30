@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <!-- NEW TABLE: appointment (linked to patient). -->
+    <changeSet id="005-create-appointment-table" author="sagar" context="prod">
+        <preConditions onFail="MARK_RAN">
+            <not><tableExists tableName="appointment"/></not>
+        </preConditions>
+        <comment>Create appointment table (JIRA-2100)</comment>
+
+        <createTable tableName="appointment">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="patient_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="scheduled_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reason" type="VARCHAR(255)"/>
+            <column name="status" type="VARCHAR(20)" defaultValue="SCHEDULED">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <!-- link each appointment to a patient -->
+        <addForeignKeyConstraint
+                constraintName="fk_appointment_patient"
+                baseTableName="appointment" baseColumnNames="patient_id"
+                referencedTableName="patient" referencedColumnNames="id"/>
+
+        <rollback>
+            <dropTable tableName="appointment"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

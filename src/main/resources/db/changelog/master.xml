@@ -14,5 +14,6 @@
     <include file="db/changelog/changes/002-add-patient-phone.xml"/>
     <include file="db/changelog/changes/003-add-patient-email.xml"/>
     <include file="db/changelog/changes/004-add-patient-dob.xml"/>
+    <include file="db/changelog/changes/005-create-appointment-table.xml"/>
 
 </databaseChangeLog>
