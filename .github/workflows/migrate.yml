@@ -106,6 +106,25 @@ jobs:
             --command='${{ inputs.command }}' \
             --count='${{ inputs.count }}'
 
+      # PROOF: query each tenant DB and print its schema + Liquibase ledger.
+      # Open this step in the logs to SEE the changes really landed.
+      - name: Verify changes were applied
+        if: always()
+        env:
+          PGPASSWORD: postgres
+        run: |
+          for db in tenant_a_db tenant_b_db tenant_c_db; do
+            echo "================== $db =================="
+            echo "--- patient table columns ---"
+            psql -h localhost -U postgres -d "$db" -c "\d patient" \
+              || echo "(patient table not present — tenant not migrated in this run)"
+            echo "--- applied changesets (DATABASECHANGELOG) ---"
+            psql -h localhost -U postgres -d "$db" \
+              -c "SELECT id, author, filename, dateexecuted FROM databasechangelog ORDER BY orderexecuted;" \
+              || echo "(no DATABASECHANGELOG — tenant not migrated in this run)"
+            echo ""
+          done
+
   # Always reports the result (wire to Slack/Teams in real use).
   notify:
     needs: migrate
