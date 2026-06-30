@@ -2,7 +2,12 @@ name: db-migration
 
 # - On PRs: only build & test (no DB touched).
 # - Migrations run ONLY when you click "Run workflow" and pick a tenant.
-#   This keeps it explicit — nothing migrates automatically.
+#
+# DEMO MODE: the migrate job below spins up a throwaway PostgreSQL inside the
+# CI runner (a "service container") and migrates that. This lets the pipeline
+# go GREEN with no external databases or secrets. To migrate REAL tenants,
+# remove the `services:` block + the "Create tenant databases" step, and feed
+# the TENANT_*_DB_* values from GitHub Secrets instead (see README).
 on:
   pull_request:
     branches: [ main ]
@@ -45,7 +50,22 @@ jobs:
     needs: build-test
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    environment: production         # optional manual-approval gate
+
+    # DEMO: a temporary Postgres available at localhost:5432 during this job.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -54,22 +74,30 @@ jobs:
           java-version: '17'
           cache: maven
 
+      - name: Create tenant databases (CI demo only)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          for db in tenant_a_db tenant_b_db tenant_c_db; do
+            psql -h localhost -U postgres -c "CREATE DATABASE $db;"
+          done
+
       - name: Build jar
         run: mvn -B -q clean package -DskipTests
 
       - name: Run migration on selected tenant(s)
         env:
-          # Tenant DB connection details come from GitHub Secrets and override
-          # the ${...} placeholders in application.yml. No Docker needed.
-          TENANT_A_DB_URL: ${{ secrets.TENANT_A_DB_URL }}
-          TENANT_A_DB_USERNAME: ${{ secrets.TENANT_A_DB_USERNAME }}
-          TENANT_A_DB_PASSWORD: ${{ secrets.TENANT_A_DB_PASSWORD }}
-          TENANT_B_DB_URL: ${{ secrets.TENANT_B_DB_URL }}
-          TENANT_B_DB_USERNAME: ${{ secrets.TENANT_B_DB_USERNAME }}
-          TENANT_B_DB_PASSWORD: ${{ secrets.TENANT_B_DB_PASSWORD }}
-          TENANT_C_DB_URL: ${{ secrets.TENANT_C_DB_URL }}
-          TENANT_C_DB_USERNAME: ${{ secrets.TENANT_C_DB_USERNAME }}
-          TENANT_C_DB_PASSWORD: ${{ secrets.TENANT_C_DB_PASSWORD }}
+          # DEMO: point every tenant at the CI Postgres service.
+          # For real tenants, replace these with ${{ secrets.TENANT_*_DB_* }}.
+          TENANT_A_DB_URL: jdbc:postgresql://localhost:5432/tenant_a_db
+          TENANT_A_DB_USERNAME: postgres
+          TENANT_A_DB_PASSWORD: postgres
+          TENANT_B_DB_URL: jdbc:postgresql://localhost:5432/tenant_b_db
+          TENANT_B_DB_USERNAME: postgres
+          TENANT_B_DB_PASSWORD: postgres
+          TENANT_C_DB_URL: jdbc:postgresql://localhost:5432/tenant_c_db
+          TENANT_C_DB_USERNAME: postgres
+          TENANT_C_DB_PASSWORD: postgres
           LIQUIBASE_CONTEXTS: prod
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
