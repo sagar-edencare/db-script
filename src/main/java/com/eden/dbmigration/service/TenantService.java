@@ -1,8 +1,9 @@
 package com.eden.dbmigration.service;
 
-import com.eden.dbmigration.config.TenantProperties;
+import com.eden.dbmigration.repository.TenantRepository;
 import com.eden.dbmigration.runner.MigrationRequest;
 import com.eden.dbmigration.tenant.Tenant;
+import com.eden.dbmigration.tenant.Tenant.TenantStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -13,36 +14,33 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Source of tenants. Reads the list straight from application.yml (TenantProperties)
- * and decides which tenants a given run should touch.
+ * Source of tenants. Reads the list DYNAMICALLY from the master database
+ * (tenant_registry) and decides which tenants a given run should touch.
  */
 @Service
 public class TenantService {
 
     private static final Logger log = LoggerFactory.getLogger(TenantService.class);
 
-    private final TenantProperties tenantProperties;
+    private final TenantRepository tenantRepository;
 
-    public TenantService(TenantProperties tenantProperties) {
-        this.tenantProperties = tenantProperties;
+    public TenantService(TenantRepository tenantRepository) {
+        this.tenantRepository = tenantRepository;
     }
 
-    /** All ENABLED tenants from config. */
+    /** All ACTIVE tenants from the master registry. */
     public List<Tenant> getActiveTenants() {
-        List<Tenant> tenants = tenantProperties.tenants().stream()
-                .filter(TenantProperties.TenantDef::enabled)
-                .map(d -> new Tenant(d.id(), d.name(), d.url(), d.username(), d.password()))
-                .toList();
-        log.info("Loaded {} enabled tenant(s) from configuration", tenants.size());
+        List<Tenant> tenants = tenantRepository.findByStatusOrderByTenantId(TenantStatus.ACTIVE);
+        log.info("Loaded {} active tenant(s) from master registry", tenants.size());
         return tenants;
     }
 
     /**
      * Resolves the request into the concrete list of tenants to migrate.
-     *  - no tenant named        -> NOTHING (we never migrate everyone by accident)
-     *  - --tenants=all          -> every enabled tenant
-     *  - specific ids named     -> only those, in the order requested
-     * Unknown / disabled ids are logged and skipped.
+     *  - no tenant named     -> NOTHING (we never migrate everyone by accident)
+     *  - --tenants=all       -> every ACTIVE tenant
+     *  - specific ids named  -> only those, in the order requested
+     * Unknown / inactive ids are logged and skipped.
      */
     public List<Tenant> resolveTenants(MigrationRequest request) {
         if (!request.hasSelection()) {
@@ -55,25 +53,25 @@ public class TenantService {
         List<Tenant> active = getActiveTenants();
 
         if (request.allTenants()) {
-            log.info("Explicit --tenants=all -> targeting every enabled tenant");
+            log.info("Explicit --tenants=all -> targeting every active tenant");
             return active;
         }
 
         Map<String, Tenant> byId = new LinkedHashMap<>();
         for (Tenant t : active) {
-            byId.put(t.id(), t);
+            byId.put(t.getTenantId(), t);
         }
 
         List<Tenant> selected = new ArrayList<>();
         for (String id : request.tenantIds()) {
             Tenant tenant = byId.get(id);
             if (tenant == null) {
-                log.warn("Requested tenant '{}' is not an enabled tenant — skipping", id);
+                log.warn("Requested tenant '{}' is not an ACTIVE tenant — skipping", id);
             } else {
                 selected.add(tenant);
             }
         }
-        log.info("Selected {} of {} enabled tenant(s) for this run",
+        log.info("Selected {} of {} active tenant(s) for this run",
                 selected.size(), active.size());
         return selected;
     }

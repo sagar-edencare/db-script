@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Builds a short-lived connection pool for ONE tenant on demand, using the
- * url/username/password from configuration.
+ * url/username/password read from the master registry row.
  *
  * We create and CLOSE a pool per tenant rather than holding many open at once.
  */
@@ -16,10 +16,10 @@ public class DataSourceFactory {
 
     public HikariDataSource createFor(Tenant tenant) {
         HikariConfig config = new HikariConfig();
-        config.setPoolName("migration-" + tenant.id());
-        config.setJdbcUrl(tenant.url());
-        config.setUsername(tenant.username());
-        config.setPassword(tenant.password());
+        config.setPoolName("migration-" + tenant.getTenantId());
+        config.setJdbcUrl(tenant.getDbUrl());
+        config.setUsername(tenant.getDbUsername());
+        config.setPassword(tenant.getDbPassword());
 
         config.setMaximumPoolSize(2);          // migrations are single-threaded per tenant
         config.setMinimumIdle(1);

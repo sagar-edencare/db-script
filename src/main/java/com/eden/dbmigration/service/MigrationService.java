@@ -51,18 +51,18 @@ public class MigrationService {
 
         for (Tenant tenant : tenants) {
             // MDC puts the tenant id on every log line for this iteration.
-            MDC.put("tenantId", tenant.id());
+            MDC.put("tenantId", tenant.getTenantId());
             long start = System.nanoTime();
             try {
                 migrateOne(tenant, request);
                 long ms = elapsedMs(start);
                 report.add(TenantMigrationResult.success(
-                        tenant.id(), tenant.name(), ms));
+                        tenant.getTenantId(), tenant.getTenantName(), ms));
                 log.info("SUCCESS in {} ms", ms);
             } catch (Exception ex) {
                 long ms = elapsedMs(start);
                 report.add(TenantMigrationResult.failed(
-                        tenant.id(), tenant.name(), ms, ex.getMessage()));
+                        tenant.getTenantId(), tenant.getTenantName(), ms, ex.getMessage()));
                 log.error("FAILED after {} ms: {}", ms, ex.getMessage(), ex);
 
                 // One tenant's failure must not stop the others (unless disabled).
@@ -82,7 +82,7 @@ public class MigrationService {
         HikariDataSource dataSource = null;
         try {
             dataSource = dataSourceFactory.createFor(tenant);
-            liquibaseRunner.execute(tenant.id(), dataSource, request);
+            liquibaseRunner.execute(tenant.getTenantId(), dataSource, request);
         } finally {
             if (dataSource != null) {
                 dataSource.close();   // release connections back to the tenant DB

@@ -3,6 +3,8 @@ target/
 *.log
 .env
 .DS_Store
+# contains real server credentials — never commit (repo is public)
+scripts/server-setup.sql
 # IDE
 .idea/
 *.iml

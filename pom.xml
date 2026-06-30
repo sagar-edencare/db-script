@@ -24,11 +24,16 @@
 
     <dependencies>
         <!-- Core Spring context + config binding. NO web starter:
-             this is a batch/CLI job, not a server. NO JPA: tenants come from
-             application.yml, so there is no master database to query. -->
+             this is a batch/CLI job, not a server. -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <!-- JPA to read the tenant_registry table from the MASTER database. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
         <!-- Validation for @ConfigurationProperties (tenant list sanity checks). -->
