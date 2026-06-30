@@ -98,7 +98,7 @@ jobs:
           TENANT_C_DB_URL: jdbc:postgresql://localhost:5432/tenant_c_db
           TENANT_C_DB_USERNAME: postgres
           TENANT_C_DB_PASSWORD: postgres
-          LIQUIBASE_CONTEXTS: prod
+          MIGRATION_CONTEXTS: prod
           DRY_RUN: ${{ inputs.dry_run }}
         run: |
           java -jar target/db-migration-service.jar \

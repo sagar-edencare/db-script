@@ -39,8 +39,8 @@ app:
 # --- our own settings (bound to MigrationProperties) ---
 migration:
   changelog-master: db/changelog/master.xml
-  contexts: ${LIQUIBASE_CONTEXTS:}
-  labels: ${LIQUIBASE_LABELS:}
+  contexts: ${MIGRATION_CONTEXTS:}
+  labels: ${MIGRATION_LABELS:}
   dry-run: ${DRY_RUN:false}
   continue-on-error: ${CONTINUE_ON_ERROR:true}
   retry:
